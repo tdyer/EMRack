@@ -56,7 +56,7 @@ class PromoJudge
 
     event_machine do
       # get the current promotion from the DB
-      get_current_promotion do |promotion|
+      get_current_promotion do
 
         resp = case @req.params['usr_action'] 
                when 'play'     then 
@@ -99,7 +99,7 @@ class PromoJudge
   def insert_promo_judge_click(resp, &blk)
 
     query = "INSERT INTO promo_data_judge_clicks (ip,media_key,click_action,created_at, updated_at,referrer, promotion_id) VALUES (\'#{resp[:data][:ip]}\', \'#{resp[:data][:media_key]}\',\'#{resp[:data][:click_action]}\', \'#{Time.now}\', \'#{Time.now}\', \'#{@req.referrer}\', \'#{resp[:data][:promotion_id]}\');"
-    # logger.debug "PromoJudge#insert_promo_judge_click: SQL = #{query.inspect}"
+    logger.debug "PromoJudge#insert_promo_judge_click: SQL = #{query.inspect}"
         
     # Make the non-blocking/async query, returns a EM::Deferrable
     df = conn.execute(query)
@@ -134,11 +134,12 @@ class PromoJudge
     end
 
     df.callback do |promo_results|
-      logger.debug "PromoJudge#get_current_promotion: Success Callback: DB results = #{Array(promo_results).inspect}"
-      result = symbolize(promo_results).first
+      promos = Array(promo_results)
+      logger.debug "PromoJudge#get_current_promotion: Success Callback: DB results = #{promos}"
 
-      # set the current_promotion
-      @current_promotion = OpenStruct.new(result)
+      result = symbolize(promos).first
+      @current_promotion = promos.empty? ? OpenStruct.new(:id => -1) : OpenStruct.new(result)
+
       logger.debug "PromoJudge#get_current_promotion: Success Callback: @current_promotion = #{@current_promotion.inspect}"      
       if block_given?
         blk.call
