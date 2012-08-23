@@ -1,0 +1,64 @@
+# install gems
+$ bundle
+
+#############
+# Start thin web server, implemented with EventMachine
+#############
+# start Rack app with thin on port 8111 in development mode
+$ thin --rackup config.ru start -p 8111
+OR 
+# start Rack app with thin on port 8111 in production mode
+$ thin --rackup config.ru start -p 8111 -e production
+OR 
+# same as above but make thin output request/response info (much slower!)
+$ thin --rackup config.ru start -p 8111 -V
+
+#############
+# Send HTTP requests to the Rack endpoints with apachebench
+# (the below were run on my MacbookPro which ran out of file
+# descriptors and is most likely quite a bit slower than a typical
+# server)
+#############
+# A very simple Rack endpoint, blocking HTTP requests
+# Requests per second:    3512.10 [#/sec] (mean)
+# 100 requests, 50 connections. 2 requests/connection
+$ ab -n 100 -c 50 http://127.0.0.1:8111/rack
+
+# Non-blocking Rack endpoint that returns immediately.
+# It runs a logging statement in a background timer job
+# that simulates a really slow server call where the
+# HTTP request returns immediately.
+# 100 requests, 50 connections. 2 requests/connection
+# Requests per second:    5224.39 [#/sec] (mean)
+$ ab -n 100 -c 50 http://127.0.0.1:8111/rack_async
+
+# Non-blocking Rack endpoint that returns immediately.
+# Runs a SQL query asynchronously.
+# NOTE: this uses the non-blocking, async, postgres gem
+# Requests per second:    4955.40 [#/sec] (mean)
+$ ab -n 100 -c 50 http://127.0.0.1:8111/db_async
+
+# Non-blocking Rack endpoint that returns immediately.
+# Health Check Rack endpoint, doesn't get much simpler that this.
+# It's a blocking HTTP request, not async, but it's soo simple.
+# Requests per second:    3404.26 [#/sec] (mean)
+$ ab -n 100 -c 50  http://127.0.0.1:8111/health_check
+
+# Non-blocking Rack endpoint that returns immediately.
+# Heart Beat Rack endpoint
+# insert into the stats DB, heartbeats table
+# Non-blocking HTTP request, DB inserts done in background
+# NOTE: 
+# -p test/promo_click_data  (HTTP request/query parameters file)
+# -T 'application/x-www-form-urlencoded' (HTTP POST with form mime-type in the request's Accept header.)
+# Requests per second:    397.84 [#/sec] (mean)
+$ ab -n 100 -c 50 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' http://127.0.0.1:8111/tracker/heartbeat 
+
+# Non-blocking Rack endpoint that returns immediately.
+# Promo Judge Click Rack endpoint
+# insert into the ourstage DB, promo_data_judge_clicks table
+# NOTE: 
+# -C promo_code='noisepop'  (sets a Cookie for the promo)
+# -H "X-Requested-With: XMLHttpRequest" (XHR/Ajax Request)
+$ ab -n 100 -c 50 -C promo_code='noisepop' -p test/promo_click_data -T 'application/x-www-form-urlencoded' -H "X-Requested-With: XMLHttpRequest" http://127.0.0.1:8111/api/promo_judge/click
+

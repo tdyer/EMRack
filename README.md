@@ -1,5 +1,5 @@
-- config.ru
-  The main, more complex, rack app that implement a number of Rack endpoints.
+- config.ru (see doc/run_apps.txt for more info)
+  The main, more complex, rack app that implements a number of Rack endpoints.
 
 
 - em_postgres_toy.rb (This is the gem we'll use!)
