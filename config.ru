@@ -1,9 +1,9 @@
 require 'rubygems'
 require 'logger'
 require 'rack/async'
-require './em_async_app'
-require './tracker_heartbeat'
-require './promo_judge'
+%w{ em_async_app tracker_heartbeat session_user promo_judge}.each do |filename|
+  require "./#{filename}"
+end
 
 use Rack::ShowExceptions
 
@@ -79,7 +79,32 @@ map "/api/promo_judge/click" do
   # Requests per second:    397.84 [#/sec] (mean)
   run PromoJudge.new(:method => :click, :logger => log, :environment => environment)
 end
+  
+use Rack::Session::Cookie,
+:key => '_ourstage_session',
+:domain => '',
+:path => '/',
+:expire_after => 2592000,
+# Ourstage::Application.config.secret_token = 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
+:secret => 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
 
+use SessionUser, :logger => log
+
+# just a dummy make sure that the above SessionUser set the user info
+# in env['rack.session.user']
+map '/test' do
+  run lambda { |env|
+    puts "TEST: User info is in env['rack.session.user'] = #{env['rack.session.user']}"
+    [200, {"Content-Type"=> "text/plain"}, ["HEY Good to go!"]]
+  }
+end
+
+# just a dummy app to set the user's id in the session, '_ourstage_session'
+# http://localhost:8111/set_user_id?user_id=99
+map "/set_user_id" do
+   run SessionUser.new(@app,:method => :set_user_id, :logger => log)
+end
+  
 # start this rack app with thin on port 8111
 #  thin --rackup config.ru start -p 8111
 
