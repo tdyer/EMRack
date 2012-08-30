@@ -64,6 +64,14 @@ map "/health_check" do
   run lambda{ |env| [200, {"Content-Type"=> "text/plain"}, ["Good to go!"]] }
 end
 
+use Rack::Session::Cookie,
+:key => '_ourstage_session',
+:domain => '',
+:path => '/',
+:expire_after => 2592000,
+# Ourstage::Application.config.secret_token = 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
+:secret => 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
+
 # Heart Beat Rack endpoint
 # insert into the stats DB, heartbeats table
 map "/tracker/heartbeat/" do
@@ -80,14 +88,6 @@ map "/api/promo_judge/click" do
   run PromoJudge.new(:method => :click, :logger => log, :environment => environment)
 end
   
-use Rack::Session::Cookie,
-:key => '_ourstage_session',
-:domain => '',
-:path => '/',
-:expire_after => 2592000,
-# Ourstage::Application.config.secret_token = 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
-:secret => 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
-
 use SessionUser, :logger => log
 
 # just a dummy make sure that the above SessionUser set the user info

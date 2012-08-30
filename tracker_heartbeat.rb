@@ -14,6 +14,11 @@ require 'em-postgres'
 # Data to POST is in tracker_heartbeat_post_data:
 # session_id=1234&user_id=33&activity=dummy_activity&beat=44
 
+# Send a request with curl
+# -d request data
+# -b cookies (_ourstage_session cookie value was pulled from a request to the main app)
+# curl -v -i -d "activity=dummy_activity&beat=44" "http://127.0.0.1:8111/tracker/heartbeat" -b "_ourstage_session=BAh7DEkiD3Nlc3Npb25faWQGOgZFRkkiJTRjZDFlYjg0ZDFlY2JmNmU2OTJhYjU4YTZhYTJlNjRjBjsAVEkiFWN1cnJlbnRfcHJvdG9jb2wGOwBGSSIJaHR0cAY7AEZJIhBfY3NyZl90b2tlbgY7AEZJIjFDUkl5K3hnY2Y1TVYxZko5VTdqRzNYREhQeGdlUnZzQ2QwZHdGaG9iYXNNPQY7AEZJIhZyZWdpc3Rlcl9hc192ZW51ZQY7AEZGSSIccmVnaXN0ZXJfYXNfY29udHJpYnV0b3IGOwBGRkkiDHVzZXJfaWQGOwBGaQNPfktJIg9sYXN0X3Zpc2l0BjsARlU6CURhdGVbC2kAaQNqeiVpAGkAaQBmDDIyOTkxNjE%3D--a6b6fa6c494ff246d3638bf27280b67f4c3fb929; someother_cookie=bar"
+
 class TrackerHeartbeat
   attr_accessor :query, :logger, :environment
 
@@ -28,17 +33,34 @@ class TrackerHeartbeat
       begin
         req = Rack::Request.new(env)
         logger.debug "TrackerHeartbeat#call: request params = #{req.params}"
-        logger.debug "TrackerHeartbeat::call request.session[:id] = #{req.session[:id]}"
+        # logger.debug "TrackerHeartbeat::call: request.cookies = #{req.cookies.inspect}"
+        logger.debug "TrackerHeartbeat::call: request.session[:session_id] = #{req.session[:session_id]}"
+        logger.debug "TrackerHeartbeat::call: request.session[:user_id] = #{req.session[:user_id]}"
+        # session will look empty until to explicity ask for an entry,
+        # that's when it's lazily loaded
+        logger.debug "TrackerHeartbeat::call: request.session = #{req.session}"
 
-        user_id = req.params['user_id'] ? req.params['user_id'] : nil;
+        session_id = req.session['session_id']
+        user_id = req.session['user_id'] ? req.session['user_id'] : nil;
+        activity = req.params['activity']
+        remote_ip = req.ip
+        beats = req.params['beat']
+        referrer = req.referrer || ""
 
-        # add the site visit to the ourstage DB
-        add_site_visit(req, user_id) if user_id
-        
+
+        # add the site visit to the ourstage DB iff this is the first
+        # visit of the day for a user.
+        # today = Time.parse("2012-08-01 23:19:31 EDT" ).utc.to_date
+        today = Time.now.utc.to_date
+        if req.session['last_visit'] != today
+          add_site_visit(user_id, today) if user_id
+          req.session['last_visit'] = today
+        end
+
         # TODO: track onliners
-
+        
         # add the heartbeat to the stats DB
-        add_stats_heartbeat(req, user_id)
+        add_stats_heartbeat( user_id, session_id, activity, remote_ip, referrer, beats)
         
         # signal to the web server, Thin, that it's HTTP request will be
         # handled asynchronously. It will not block
@@ -56,14 +78,8 @@ class TrackerHeartbeat
   private
   
   # add the heartbeat to the stats DB
-  def add_stats_heartbeat(req, user_id)
-    session_id = req.params['session_id']
-    activity = req.params['activity']
-    ip_addr = req.ip
-    referrer = req.referrer || ""
+  def add_stats_heartbeat( user_id, session_id, activity, ip_addr, referrer, beat)
     created_at = Time.now
-    beat = req.params['beat']
-
     
     # insert into the stats DB heartbeats table
     sql = "INSERT INTO heartbeats (session_id, user_id, activity, ip_addr, referrer, created_at, beat) VALUES (\'#{session_id}\', \'#{user_id}\', \'#{activity}\', \'#{ip_addr}\', \'#{referrer}\', \'#{created_at}\', \'#{beat}\');"
@@ -87,26 +103,25 @@ class TrackerHeartbeat
       raise ex
     end
   end
-  
-  def add_site_visit(request, user_id)
-    # ourstage time
-    # TODO: convert to ourstage time
-    created_at = Time.now # Time.now.in_time_zone('EST5EDT').beginning_of_day
 
+  # add the site visit to the ourstage DB
+  def add_site_visit(user_id, created_at)
+    
     sql = "INSERT INTO site_visits (user_id, created_at) VALUES (\'#{user_id}\', \'#{created_at}\');"
     logger.debug "TrackerHeartbeat::add_site_visit: SQL = #{sql}"            
     df = ourstage_dbconn.execute(sql)
 
     # success callback
     df.callback do |result|
-      logger.debug "TrackerHeartbeat::add_site_visit: success"
+      logger.debug "TrackerHeartbeat::add_site_visit: success adding visit for user #{user_id} on #{created_at}"
     end
 
     # error callback
     df.errback do |ex|
       if ex.is_a?(PG::Result) && ex.error_message =~ /duplicate key value violates unique constraint \"uniq_user_visits\"/
-        # This error is OK, will not suceeded at adding 2 site visits
-        # on the same day
+        # This error, constraint violation, is OK. It will not
+        # allow adding 2 site visits on the same day for the same
+        # user.
         logger.debug "TrackerHeartbeat::add_site_visit: Exception, DB results = #{Array(ex).inspect}"
         logger.debug "TrackerHeartbeat::add_site_visit: Exception, error_message = #{ex.error_message}"
       else
