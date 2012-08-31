@@ -9,10 +9,12 @@ require 'em-postgres'
 # thin --rackup config.ru start -p 8111
 
 # test 100 HTTP POST requests by 50 users
-# ab -n 100 -c 50 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' http://127.0.0.1:8111/tracker/heartbeat 
-
-# Data to POST is in tracker_heartbeat_post_data:
-# session_id=1234&user_id=33&activity=dummy_activity&beat=44
+# -n number of requests
+# -c number of concurrent users/connections
+# -p data to POST "activity=dummy_activity&beat=42"
+# -T Accept HTTP Header
+# -C Cookie data, data is was captured from a session with the main app.
+# ab -n 1 -c 1 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' -C "_ourstage_session=BAh7DEkiD3Nlc3Npb25faWQGOgZFRkkiJTRjZDFlYjg0ZDFlY2JmNmU2OTJhYjU4YTZhYTJlNjRjBjsAVEkiFWN1cnJlbnRfcHJvdG9jb2wGOwBGSSIJaHR0cAY7AEZJIhBfY3NyZl90b2tlbgY7AEZJIjFDUkl5K3hnY2Y1TVYxZko5VTdqRzNYREhQeGdlUnZzQ2QwZHdGaG9iYXNNPQY7AEZJIhZyZWdpc3Rlcl9hc192ZW51ZQY7AEZGSSIccmVnaXN0ZXJfYXNfY29udHJpYnV0b3IGOwBGRkkiDHVzZXJfaWQGOwBGaQNPfktJIg9sYXN0X3Zpc2l0BjsARlU6CURhdGVbC2kAaQNqeiVpAGkAaQBmDDIyOTkxNjE%3D--a6b6fa6c494ff246d3638bf27280b67f4c3fb929" http://127.0.0.1:8111/tracker/heartbeat 
 
 # Send a request with curl
 # -d request data
@@ -66,10 +68,11 @@ class TrackerHeartbeat
         # handled asynchronously. It will not block
         env['async.callback'].call([200, {}, ["Tracker Heartbeat!!!!!!!"]])
       rescue  Exception => e
-        logger.debug "TrackerHeartbeat::call Exception => #{e.inspect}"
+        logger.error "TrackerHeartbeat::call Exception => #{e.inspect}"
       end
       
     end
+    logger.debug "TrackerHeartbeat::call returning"
     # returning this signals to the server we are sending an async
     # response
     Rack::Async::RESPONSE
@@ -96,9 +99,9 @@ class TrackerHeartbeat
     # error callback
     df.errback do |ex|
       if ex.is_a?(PG::Result)
-        logger.debug "TrackerHeartbeat::add_stats_heartbeat: Exception, error_message = #{ex.error_message}"
+        logger.error "TrackerHeartbeat::add_stats_heartbeat: Exception, error_message = #{ex.error_message}"
       else
-        logger.debug "TrackerHeartbeat::add_stats_heartbeat: Exception = #{ex.inspect}"
+        logger.error "TrackerHeartbeat::add_stats_heartbeat: Exception = #{ex.inspect}"
       end
       raise ex
     end
@@ -122,10 +125,14 @@ class TrackerHeartbeat
         # This error, constraint violation, is OK. It will not
         # allow adding 2 site visits on the same day for the same
         # user.
-        logger.debug "TrackerHeartbeat::add_site_visit: Exception, DB results = #{Array(ex).inspect}"
-        logger.debug "TrackerHeartbeat::add_site_visit: Exception, error_message = #{ex.error_message}"
+        logger.info "TrackerHeartbeat::add_site_visit: Exception, DB results = #{Array(ex).inspect}"
+        logger.info "TrackerHeartbeat::add_site_visit: Exception, error_message = #{ex.error_message}"
+      elsif ex.is_a?(PG::Result)
+        logger.error "TrackerHeartbeat::add_site_visit: Exception, DB results = #{Array(ex).inspect}"
+        logger.error "TrackerHeartbeat::add_site_visit: Exception, error_message = #{ex.error_message}"
+        raise ex
       else
-        logger.debug "TrackerHeartbeat::add_site_visit: Exception = #{ex.inspect}"        
+        logger.error "TrackerHeartbeat::add_site_visit: Exception = #{ex.inspect}"        
         raise ex
       end
     end
