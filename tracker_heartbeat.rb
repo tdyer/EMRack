@@ -52,9 +52,9 @@ class TrackerHeartbeat
 
         # add the site visit to the ourstage DB iff this is the first
         # visit of the day for a user.
-        # today = Time.parse("2012-08-01 23:19:31 EDT" ).utc.to_date
+        # today = Time.parse("2012-08-30 12:19:31 EDT" ).utc.to_date
         today = Time.now.utc.to_date
-        if req.session['last_visit'] != today
+        if req.session['last_visit'].to_date != today
           add_site_visit(user_id, today) if user_id
           req.session['last_visit'] = today
         end
@@ -85,7 +85,12 @@ class TrackerHeartbeat
     created_at = Time.now
     
     # insert into the stats DB heartbeats table
-    sql = "INSERT INTO heartbeats (session_id, user_id, activity, ip_addr, referrer, created_at, beat) VALUES (\'#{session_id}\', \'#{user_id}\', \'#{activity}\', \'#{ip_addr}\', \'#{referrer}\', \'#{created_at}\', \'#{beat}\');"
+    sql = <<-SQL.gsub(/\s{2}/, '')
+      INSERT INTO heartbeats (session_id, user_id, activity, ip_addr,
+      referrer, created_at, beat) VALUES ('#{session_id}', '#{user_id}',
+      '#{activity}', '#{ip_addr}', '#{referrer}', '#{created_at}', '#{beat}')
+      
+    SQL
     logger.debug "TrackerHeartbeat::add_stats_heartbeat: SQL = #{sql.inspect}"
 
     # Make the non-blocking/async query, returns a EM::Deferrable
@@ -110,8 +115,8 @@ class TrackerHeartbeat
   # add the site visit to the ourstage DB
   def add_site_visit(user_id, created_at)
     
-    sql = "INSERT INTO site_visits (user_id, created_at) VALUES (\'#{user_id}\', \'#{created_at}\');"
-    logger.debug "TrackerHeartbeat::add_site_visit: SQL = #{sql}"            
+    sql = %Q<INSERT INTO site_visits (user_id, created_at) VALUES ('#{user_id}', '#{created_at}');>
+    logger.debug "TrackerHeartbeat::add_site_visit: SQL = #{sql}"
     df = ourstage_dbconn.execute(sql)
 
     # success callback
