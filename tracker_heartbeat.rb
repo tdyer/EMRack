@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'rack/async'
 require 'eventmachine'
+require_relative 'logger'
 require_relative 'db_connection'
 require_relative 'onliner'
 
@@ -23,11 +24,9 @@ require_relative 'onliner'
 module OurStage
   module Rack
     class TrackerHeartbeat
-      attr_accessor :query,:environment, :logger
+      attr_accessor :query
 
       def initialize(opts ={ })
-        @logger = opts[:logger]
-        @environment = opts[:environment]  
       end
 
       def call(env)
@@ -62,7 +61,7 @@ module OurStage
             get_user_level(user_id) do |user_level|
               onliner = OurStage::Rack::Onliner.new(:user_id => user_id, :user_level => user_level, :activity => activity,
                           :channel => req.params['channel'], :target_user => req.params['target_user'],
-                                          :ip_addr => remote_ip, :logger => logger)
+                                          :ip_addr => remote_ip, :updated_at => Time.now.utc)
               logger.debug "TrackerHeartbeat::call: onliner = #{onliner.inspect}"
               Onliner.process(onliner)
             end
@@ -86,6 +85,10 @@ module OurStage
 
       private
 
+      def logger
+        @log ||= OurStage::Rack::Logger.logger
+      end
+      
       # TODO: batch up DB calls to get user levels
       def get_user_level(user_id, &blk)
         logger.debug "TrackerHeartbeat::get_user_level: for user #{user_id}"
