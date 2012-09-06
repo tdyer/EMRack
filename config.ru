@@ -1,7 +1,6 @@
 require 'rubygems'
-require 'logger'
 require 'rack/async'
-%w{ em_async_app tracker_heartbeat session_user promo_judge}.each do |filename|
+%w{ logger em_async_app tracker_heartbeat session_user promo_judge}.each do |filename|
   require "./#{filename}"
 end
 
@@ -19,18 +18,8 @@ unless valid_environments.include?(environment)
 end
 
 # set up the Apache-like logger
-log = Logger.new("log/#{environment}.log", File::WRONLY | File::APPEND)
-case environment
-when 'development'
-  log.level = Logger::DEBUG
-when 'test'
-  log.level = Logger::DEBUG
-when 'production'
-  log.level = Logger::INFO
-else
-  raise ArgumentError.new("Invalid environment #{environment}, must be #{valid_environments.join(' OR ')}") 
-end
-use Rack::CommonLogger, log
+OurStage::Rack::Logger.environment = environment
+use Rack::CommonLogger, OurStage::Rack::Logger.logger
 
 # for handling asyn requests
 use Rack::Async
@@ -48,7 +37,7 @@ end
 map "/rack_async" do
   # ab -n 100 -c 50 http://127.0.0.1:8111/rack_async
   # Requests per second:    5224.39 [#/sec] (mean)
-  run EMAsyncApp.new(:method => 'rack_async', :logger => log)
+  run EMAsyncApp.new(:method => 'rack_async', :logger => OurStage::Rack::Logger.logger)
 end
 
 # Non-blocking Rack endpoint that returns immediately.
@@ -56,7 +45,7 @@ end
 map "/db_async" do
   # ab -n 100 -c 50 http://127.0.0.1:8111/db_async
   # Requests per second:    4955.40 [#/sec] (mean)
-  run EMAsyncApp.new(:method => 'db_async', :query => 'select count(*) from categories', :logger => log)
+  run EMAsyncApp.new(:method => 'db_async', :query => 'select count(*) from categories', :logger => OurStage::Rack::Logger.logger)
 end
 
 # Health Check Rack endpoint, doesn't get much simpler that this.
@@ -81,7 +70,7 @@ OurStage::Rack::DBConn.environment = environment
 map "/tracker/heartbeat/" do
   # ab -n 100 -c 50 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' http://127.0.0.1:8111/tracker/heartbeat 
   # Requests per second:    1987.83 [#/sec] (mean)
-  run OurStage::Rack::TrackerHeartbeat.new(:logger => log)
+  run OurStage::Rack::TrackerHeartbeat.new
 end
 
 # Promo Judge Click Rack endpoint
@@ -89,10 +78,10 @@ end
 map "/api/promo_judge/click" do
   # ab -n 100 -c 50 -C promo_code='noisepop' -p test/promo_click_data -T 'application/x-www-form-urlencoded' -H "X-Requested-With: XMLHttpRequest" http://127.0.0.1:8111/api/promo_judge/click
   # Requests per second:    397.84 [#/sec] (mean)
-  run PromoJudge.new(:method => :click, :logger => log, :environment => environment)
+  run PromoJudge.new(:method => :click, :logger => OurStage::Rack::Logger.logger, :environment => environment)
 end
   
-use SessionUser, :logger => log
+use SessionUser, :logger => OurStage::Rack::Logger.logger
 
 # just a dummy make sure that the above SessionUser set the user info
 # in env['rack.session.user']
@@ -106,7 +95,7 @@ end
 # just a dummy app to set the user's id in the session, '_ourstage_session'
 # http://localhost:8111/set_user_id?user_id=99
 map "/set_user_id" do
-   run SessionUser.new(@app,:method => :set_user_id, :logger => log)
+   run SessionUser.new(@app,:method => :set_user_id, :logger => OurStage::Rack::Logger.logger)
 end
   
 # start this rack app with thin on port 8111
