@@ -72,12 +72,16 @@ use Rack::Session::Cookie,
 # Ourstage::Application.config.secret_token = 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
 :secret => 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
 
+
+# pass the environment to the DB connection singleton
+OurStage::Rack::DBConn.environment = environment
+
 # Heart Beat Rack endpoint
 # insert into the stats DB, heartbeats table
 map "/tracker/heartbeat/" do
   # ab -n 100 -c 50 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' http://127.0.0.1:8111/tracker/heartbeat 
   # Requests per second:    1987.83 [#/sec] (mean)
-  run TrackerHeartbeat.new(:logger => log, :environment => environment)
+  run OurStage::Rack::TrackerHeartbeat.new(:logger => log)
 end
 
 # Promo Judge Click Rack endpoint
