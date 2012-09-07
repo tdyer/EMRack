@@ -10,7 +10,7 @@ require_relative 'onliner'
 # thin --rackup config.ru start -p 8111
 
 # Memcache/Dalli Sessions
-#  ab -n 1 -c 1 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' -C 'rack.session=dcc1c0058bd31754ff328bb3317b326b' http://127.0.0.1:8111/tracker/heartbeat 
+# ab -n 1 -c 1 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' -C '_os_session=dcc1c0058bd31754ff328bb3317b326b' http://127.0.0.1:8111/tracker/heartbeat
 
 # Cookie Sessions ONLY
 # test 100 HTTP POST requests by 50 users
@@ -46,7 +46,7 @@ module OurStage
             
             logger.debug "TrackerHeartbeat#call: request params = #{req.params}"
 
-            session_id = req.session['session_id'] || req.cookies['rack.session']
+            session_id = req.session['session_id'] || req.cookies['_os_session']
             user_id = req.session['user_id'] ? req.session['user_id'] : nil;
             activity = req.params['activity']
             remote_ip = req.ip
