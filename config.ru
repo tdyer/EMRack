@@ -1,8 +1,12 @@
 require 'rubygems'
 require 'rack/async'
+require 'rack/session/dalli'
+# require 'ruby-debug'
 %w{ logger em_async_app tracker_heartbeat session_user promo_judge}.each do |filename|
   require "./#{filename}"
 end
+
+# Debugger.start
 
 use Rack::ShowExceptions
 
@@ -53,14 +57,15 @@ map "/health_check" do
   run lambda{ |env| [200, {"Content-Type"=> "text/plain"}, ["Good to go!"]] }
 end
 
-use Rack::Session::Cookie,
-:key => '_ourstage_session',
-:domain => '',
-:path => '/',
-:expire_after => 2592000,
-# Ourstage::Application.config.secret_token = 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
-:secret => 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
+# use Rack::Session::Cookie,
+# :key => '_ourstage_session',
+# :domain => '',
+# :path => '/',
+# :expire_after => 2592000,
+# # Ourstage::Application.config.secret_token = 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
+# :secret => 'ec6811409dab0eaa97f678b8e5c189a60fe21691d23b9aad14667595a3d3856fa59d54b8a081e9093c55e523eb790dbbb11f066739864b9398359238ddb6763c' 
 
+use Rack::Session::Dalli, :namespace => '_session_id'
 
 # pass the environment to the DB connection singleton
 OurStage::Rack::DBConn.environment = environment
@@ -68,8 +73,6 @@ OurStage::Rack::DBConn.environment = environment
 # Heart Beat Rack endpoint
 # insert into the stats DB, heartbeats table
 map "/tracker/heartbeat/" do
-  # ab -n 100 -c 50 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' http://127.0.0.1:8111/tracker/heartbeat 
-  # Requests per second:    1987.83 [#/sec] (mean)
   run OurStage::Rack::TrackerHeartbeat.new
 end
 
