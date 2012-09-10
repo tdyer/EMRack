@@ -65,7 +65,7 @@ module OurStage
         df1 = ourstage_dbconn.execute(sql)
 
         df1.callback do
-          logger.debug "Onliner.delete_old: success deleting old onliners"
+          logger.info "Onliner.delete_old: success deleting old onliners"
 
           # delete all onliners for users that are to be updated
           sql2 = %Q(DELETE FROM onliners where user_id IN (#{@@users.keys.join(',')});)
@@ -73,7 +73,7 @@ module OurStage
           df2 = ourstage_dbconn.execute(sql2)
 
           df2.callback do
-            logger.debug "Onliner.delete_old: success deleting by user_id"
+            logger.info "Onliner.delete_old: success deleting by user_id"
             blk.call if block_given?
           end
           
@@ -124,7 +124,7 @@ module OurStage
         df = ourstage_dbconn.execute(sql)
 
         df.callback do |result|
-          logger.debug "Onliner.create!: success creating an onliner"
+          logger.info "Onliner.create!: success creating an onliner"
         end
 
         df.errback do |ex|

@@ -92,7 +92,7 @@ module OurStage
         # signal to the web server, Thin, that it's HTTP request will be
         # handled asynchronously. It will not block waiting for response.
         env['async.callback'].call([200, {}, ["Tracker Heartbeat!!!!!!!"]])
-        logger.debug "TrackerHeartbeat::call returning"
+        logger.info "TrackerHeartbeat::call returning"
         # returning this signals to the server we are sending an async
         # response
         ::Rack::Async::RESPONSE
@@ -115,7 +115,7 @@ module OurStage
 
         df.callback do |results|
           user_level = Array(results).first["user_level"]
-          logger.debug "TrackerHeartbeat::get_user_level: success,  user_level = #{user_level}"
+          logger.info "TrackerHeartbeat::get_user_level: success,  user_level = #{user_level}"
           blk.call(user_level) if block_given?
         end
 
@@ -153,7 +153,7 @@ module OurStage
 
         # success callback
         df.callback { |result|
-          logger.debug "TrackerHeartbeat::add_stats_heartbeat: success"
+          logger.info "TrackerHeartbeat::add_stats_heartbeat: success"
         }
 
         # error callback
@@ -176,7 +176,7 @@ module OurStage
 
         # success callback
         df.callback do |result|
-          logger.debug "TrackerHeartbeat::add_site_visit: success adding visit for user #{user_id} on #{created_at}"
+          logger.info "TrackerHeartbeat::add_site_visit: success adding visit for user #{user_id} on #{created_at}"
         end
 
         # error callback
