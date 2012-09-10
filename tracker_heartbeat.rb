@@ -48,6 +48,9 @@ module OurStage
             
             logger.debug "TrackerHeartbeat#call: request params = #{req.params}"
 
+            # TODO: implement async, non-blocking, memcache requests.
+            # All requests for session is a BLOCKING call to
+            # memcached. 
             session_id = req.session['session_id'] || req.cookies['_os_session']
             user_id = req.session['user_id'] ? req.session['user_id'] : nil;
             activity = req.params['activity']
