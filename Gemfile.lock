@@ -13,6 +13,8 @@ GEM
     pg (0.14.0)
     rack (1.4.1)
     rack-async (0.1.0)
+    rack-proxy (0.3.7)
+      rack
     ruby-debug-base19 (0.11.25)
       columnize (>= 0.3.1)
       linecache19 (>= 0.5.11)
@@ -36,5 +38,6 @@ DEPENDENCIES
   json
   pg
   rack-async
+  rack-proxy
   ruby-debug19
   thin
