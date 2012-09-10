@@ -57,6 +57,8 @@ map "/rack_healthcheck" do
   run lambda{ |env| [200, {"Content-Type"=> "text/plain"}, ["Rack Healthcheck, Good to go!"]] }
 end
 
+# Session storage is backed by Memcache, NOTE: the :key's value MUST
+# match the key in the main app config/initializers/session_store.rb
 use Rack::Session::Dalli, :key => '_os_session', :namespace => '_session_id'
 
 # pass the environment to the DB connection singleton

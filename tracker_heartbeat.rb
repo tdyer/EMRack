@@ -36,9 +36,11 @@ module OurStage
       end
 
       def call(env)
+        # puts "Thread.current = #{Thread.current}"
+        # puts "My Object ID = #{self.object_id.inspect}"        
         event_machine do
           begin
-
+            
             req = ::Rack::Request.new(env)
 
             # debugger
@@ -56,7 +58,8 @@ module OurStage
             # session will look empty until we explicity ask for an entry,
             # that's when it's lazily loaded.
             logger.debug "TrackerHeartbeat::call: request.session = #{req.session}"
-
+            
+            fail ArgumentError.new("TrackerHeartbeat::call: must have a user id") if !user_id 
             
             # add the site visit to the ourstage DB iff this is the first
             # visit of the day for a user.
@@ -80,18 +83,20 @@ module OurStage
             # add the heartbeat to the stats DB
             add_stats_heartbeat( user_id, session_id, activity, remote_ip, referrer, beats)
             
-            # signal to the web server, Thin, that it's HTTP request will be
-            # handled asynchronously. It will not block waiting for response.
-            env['async.callback'].call([200, {}, ["Tracker Heartbeat!!!!!!!"]])
           rescue  Exception => e
             logger.error "TrackerHeartbeat::call Exception => #{e.inspect}"
+            
           end
-          
         end
+
+        # signal to the web server, Thin, that it's HTTP request will be
+        # handled asynchronously. It will not block waiting for response.
+        env['async.callback'].call([200, {}, ["Tracker Heartbeat!!!!!!!"]])
         logger.debug "TrackerHeartbeat::call returning"
         # returning this signals to the server we are sending an async
         # response
         ::Rack::Async::RESPONSE
+        
       end
 
       private
@@ -171,10 +176,12 @@ module OurStage
 
         # error callback
         df.errback do |ex|
-          if ex.is_a?(PG::Result) && ex.error_message =~ /duplicate key value violates unique constraint \"uniq_user_visits\"/
+          if ex.is_a?(PG::Result) && ex.error_field( PG::Result::PG_DIAG_SQLSTATE ) == "23505"
+            # ex.error_message =~ /duplicate key value violates unique constraint \"uniq_user_visits\"/
             # This error, constraint violation, is OK. It will not
             # allow adding 2 site visits on the same day for the same
             # user. Note, this logs in INFO level, it's not an error.
+            logger.info "TrackerHeartbeat::add_site_visit: Exception, DB results = #{ex.inspect}"
             logger.info "TrackerHeartbeat::add_site_visit: Exception, DB results = #{Array(ex).inspect}"
             logger.info "TrackerHeartbeat::add_site_visit: Exception, postgres message = #{ex.error_message}"
           elsif ex.is_a?(PG::Result)

@@ -2,10 +2,13 @@ require 'yaml'
 require 'erb'
 require 'em-postgres'
 
+# NOTE: The DB config files, config/ourstage_development and
+# config/stats_database.yml MUST be the same as their respective apps.
 module OurStage
   module Rack
     class DBConn
       class << self
+        # development, test, production environments
         attr_accessor :environment
       end
 
