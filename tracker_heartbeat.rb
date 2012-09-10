@@ -133,14 +133,19 @@ module OurStage
       # add the heartbeat to the stats DB
       def add_stats_heartbeat( user_id, session_id, activity, ip_addr, referrer, beat)
         created_at = Time.now
-        
+        # Let the DB generate errors!
+        # fail ArgumentError.new("TrackerHeartbeat::add_stats_heartbeat: must have a user id") if !user_id
+        # fail ArgumentError.new("TrackerHeartbeat::add_stats_heartbeat: must have a session id") if !session_id                 
+        # fail ArgumentError.new("TrackerHeartbeat::add_stats_heartbeat: must have an activity") if !activity
+        # fail ArgumentError.new("TrackerHeartbeat::add_stats_heartbeat: must have an activity") if !ip_addr
+
         # insert into the stats DB heartbeats table
         sql = <<-SQL.gsub(/\s{2}/, '')
-      INSERT INTO heartbeats (session_id, user_id, activity, ip_addr,
-      referrer, created_at, beat) VALUES ('#{session_id}', '#{user_id}',
-      '#{activity}', '#{ip_addr}', '#{referrer}', '#{created_at}', '#{beat}')
-      
-    SQL
+          INSERT INTO heartbeats (session_id, user_id, activity, ip_addr,
+          referrer, created_at, beat) VALUES ('#{session_id}', '#{user_id}',
+          '#{activity}', '#{ip_addr}', '#{referrer}', '#{created_at}', '#{beat}')
+
+        SQL
         logger.debug "TrackerHeartbeat::add_stats_heartbeat: SQL = #{sql.inspect}"
 
         # Make the non-blocking/async query, returns a EM::Deferrable

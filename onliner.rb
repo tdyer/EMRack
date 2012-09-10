@@ -25,10 +25,7 @@ module OurStage
       # time becomes the new online timeout.
       def self.process(onliner)
         logger.debug "Onliner.process: "
-        unless onliner && onliner.user_id
-          logger.error "Onliner.process: no user_id for onliner "          
-          return
-        end
+        fail ArgumentError.new("Onliner.process: no user_id for onliner") unless onliner && onliner.user_id
         
         @@users ||= {}
         @@last_update_time ||= Time.now.utc         # Initialize last update time
