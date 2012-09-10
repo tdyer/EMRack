@@ -32,10 +32,12 @@ class AppProxy < Rack::Proxy
     @req = Rack::Request.new(env)
     puts "request.path = #{@req.path}"
     
-    if @req.path !~ %r{^/tracker/heartbeat}
-      env["HTTP_HOST"] = 'localhost:3333'
+    if @req.path =~ %r{^/tracker/heartbeat}
+      env["HTTP_HOST"] = 'localhost:8111'      
+    elsif @req.path =~ %r{^/rack_healthcheck}
+      env["HTTP_HOST"] = 'localhost:8111'      
     else
-      env["HTTP_HOST"] = 'localhost:8111'
+      env["HTTP_HOST"] = 'localhost:3333'
     end
     env
   end

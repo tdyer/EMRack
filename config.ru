@@ -53,8 +53,8 @@ map "/db_async" do
 end
 
 # Health Check Rack endpoint, doesn't get much simpler that this.
-map "/health_check" do
-  run lambda{ |env| [200, {"Content-Type"=> "text/plain"}, ["Good to go!"]] }
+map "/rack_healthcheck" do
+  run lambda{ |env| [200, {"Content-Type"=> "text/plain"}, ["Rack Healthcheck, Good to go!"]] }
 end
 
 use Rack::Session::Dalli, :key => '_os_session', :namespace => '_session_id'
