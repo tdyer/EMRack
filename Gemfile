@@ -13,7 +13,7 @@ gem 'pg'
 gem "em-postgres"
 gem 'json'
 
-os_group :development, :test do
+group :development, :test do
   gem 'rack-proxy'
   gem 'ruby-debug19'
 end
