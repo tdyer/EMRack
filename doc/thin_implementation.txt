@@ -16,15 +16,41 @@ and invoke the Rack app in the main EventMachine Reactor loop
     Thin::Backends::TcpServer.new(host,port)
    - Thin::Server#start
      - Thin::Backends::Base#start
-       - Thin::Backens::connect
+       - Thin::Backends::connect
          - EventMachine.start_server(@host, port, Connection, &method(:initialize_connection)
          See http://eventmachine.rubyforge.org/EventMachine.html#M000470    
          This will create a new Thin::Connection instance for each incoming connection. 
-           - Thin::Connection.recieve_data(data)
-           Will get the data for the HTTP request, data, on a socket
+          - Thin::Connection.post_init
+            create a Thin::Request and Thin::Response instance
+          - Thin::Connection.receive_data(data)
+            Will get the data for the HTTP request, data, on a socket
            - Thin::Request.parse(data)
            parse it using Thin's Ragel parser
            This will parse the raw data from the connection into a Thin::Request instance
-             - Thin::HttpParser#finished (this is a the Mongrel Ragel parser)
-           - Thin::Connection.pre_process()
-             
+             - Thin::HttpParser#finished (this is a the Mongrel Ragel
+             parser)
+            - Thin::Connection.process()
+                post_process(pre_process)
+               - Thin::Connection.pre_process()
+                 Set the remote, client/browser, address in the request
+                 Set the Request async callback to the post_process method !!!!
+                 Set the response to AsyncResponse, [-1, {}, []]
+                 Call the downstream Rack app
+                   catch(:async) do
+                     # Process the request calling the Rack adapter
+                     response = @app.call(@request.env)
+                   end
+               - Thin::Connection.post_process(result)
+                 result is the reponse returned by the downstream app
+                 return if the result is for async request, 
+                 iterate over the response with each and get each
+                 chunk of the response to send to the browser/client
+                 send_data(chunk)
+                 execute the ensure block which will
+                  call the Deferred.callback and Deferred.errbak
+                  handlers if the response is a Deferred instance!!
+                 - Thin::Connection.terminate_request
+                   either close the connection, if it's not persistent
+                   This is where the Deferred object, Request,
+                   callback will be invoked!!!
+                   

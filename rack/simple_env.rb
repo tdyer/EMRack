@@ -8,12 +8,10 @@ my_app = lambda do |env|
 
   # print out environment variables passed, contructed by the web
   # server from the HTTP request
-  begin
-    puts
-    puts '*'*10 << " Environment:" << '*'*10
-    env.each do |k, v|
-      puts "#{k}: #{v}"
-    end
+  puts
+  puts '*'*10 << " Environment:" << '*'*10
+  env.each do |k, v|
+    puts "#{k}: #{v}"
   end
 
   title = 'Simple Rack Example to print out path and some environment variables'
@@ -36,8 +34,8 @@ puts File.expand_path(File.dirname(__FILE__))
 puts "Rack version = #{Rack.version}"
 
 PORT = 8111
-# Rack::Handler::WEBrick.run Rack::CommonLogger.new(my_app), :Port => PORT
-Rack::Handler::WEBrick.run my_app, :Port => PORT
+# Rack::Handler::WEBrick.run my_app, :Port => PORT
+Rack::Handler::Thin.run my_app, :Port => PORT
 
 # client
 # curl http://localhost:8111 -v

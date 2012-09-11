@@ -27,5 +27,5 @@ end
 # http://localhost:3131/second_app to the second Proc
 # http://localhost:3131/third_app to the third Proc...
 # Any other URL will be handled by the bogus_app Proc which will raise an Exception 
-Rack::Handler::Thin.run Rack::ShowExceptions.new(Rack::CommonLogger.new(Rack::URLMap.new('/one_app'=> first_app, '/two_app' => second_app,'/three_app' => third_app, '/' => bogus_app))), :Port => PORT
+Rack::Handler::Thin.run Rack::ShowExceptions.new(Rack::CommonLogger.new(Rack::URLMap.new('/one_app'=> first_app, '/two_app' => second_app,'/three_app' => third_app, '/bogus_app' => bogus_app))), :Port => PORT
 

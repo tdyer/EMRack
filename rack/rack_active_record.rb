@@ -12,7 +12,7 @@
 PORT=3131
 
 # Hook up to the Decision Support development  DB. 
-db_config = YAML.load( ERB.new(File.read("database.yml")).result )
+db_config = YAML.load( ERB.new(File.read("ourstage_database.yml")).result )
 AR = ActiveRecord::Base 
 AR.allow_concurrency = true
 AR.establish_connection(db_config['development'])
@@ -43,13 +43,13 @@ class DSViewer
 
   # This will choose the format, (xml, json, yaml, ...) based on 
   # URI suffix (.xml, .json, ...)
-  # ex: http://localhost:3131/user/3.xml will reply wih XML format user object
+  # ex: http://localhost:3131/user/311.xml will reply wih XML format user object
 
   # ar - ActiveRecord model where rendering
 
   # TODO: Look at HTTP  headers to determine the format
   # BUG: Only works for records using the found by id, ex: /user/1.xml 
-  # not /user/jmiller.xml
+  # not /user/tdyer.xml
   def output_format(ar)
     # get the url suffix (.xml, .json,...)
     @format = @req.path_info.split('.').last
@@ -58,7 +58,7 @@ class DSViewer
     f = %w{ xml json yaml}.find{  |f| f ==@format }
 
     # convert to the method to_xml, to_json,...
-    ar_method = f ? "to_#{f}": "inspect" 
+    ar_method = f ? "to_#{f}": "attributes" 
 
     # xml => ar.to_xml, json => ar.to_json else ar.inspect
     ar.send(ar_method.to_sym)
@@ -88,7 +88,7 @@ class DSViewer
     # handles /user/{id} or /user/{login_name}
     second_param = @req.path_info.split('/')[1]
     id = second_param.to_i
-    user = (id != 0 ? User.find(id) : User.find_by_login(second_param))
+    user = (id != 0 ? User.find(id) : User.find_by_user_name(second_param))
     output_format(user)
   end
 
@@ -106,7 +106,7 @@ app = Rack::Builder.new {
   use Rack::ShowExceptions 
   map "/" do  # dispatch/route for the root
     use Rack::Lint 
-    run DSViewer.new 
+    run DSViewer.new(:method => 'root')
   end 
   map "/boom" do |m| # dispatch/route for /boom
     # just raises and exception
@@ -126,6 +126,8 @@ Rack::Handler::Thin.run app, :Port => 3131
 # Rack::Handler::WEBrick.run app, :Port => 3131
 # To test:
 # curl http://localhost:3131  -v
-# curl http://localhost:3131/user/1.json  -v
+# curl http://localhost:3131/user/tdyer  -v
+# curl http://localhost:3131/user/311  -v
+# curl http://localhost:3131/user/311.json  -v
 # curl http://localhost:3131/user/1.xml  -v
 

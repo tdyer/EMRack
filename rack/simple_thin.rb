@@ -2,14 +2,16 @@
 
 require 'rubygems'
 require 'rack'
+require 'thin'
 
-my_app = lambda do |env|
-  [200, {"Content-Type" => "text/html"}, ["hello world"]]
+
+app =  lambda do |env|
+  [200, {"Content-Type" => "text/html"}, ["hello Thin world"]]
 end
 
-# Rack::Handler::Mongrel.run my_app, :Port => 8888
-Rack::Handler::Thin.run my_app, :Port => 8888
-# Rack::Handler::WEBrick.run my_app, :Port => 8888
+Thin::Server.start('0.0.0.0', 8888) do
+  run app
+end
 
 # apachebench
 # -n 100 requests
