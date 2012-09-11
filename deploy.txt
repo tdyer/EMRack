@@ -1,0 +1,23 @@
+- Get the app. 
+  $ git clone ourstage@devdb:RackApps.git
+  $ cd RackApps
+
+- Check that the RVM gemset is created
+  $ rvm info |grep GEM_HOME # .rvm/gems/ruby-1.9.3-p194@os_rack_apps
+
+- Install gems
+  $ bundle install
+
+- Create a log directory if it doesn't exist
+  $ mkdir log
+
+- Redirect the heartbeat to the Rack backend.
+  Setup proxy to direct URI '/tracker/heartbeat' to port 8111
+
+- Direct the Rack backend healthcheck (Optional)
+  Setup proxy to direct URI '/rack_healthcheck' to port 8111
+
+- run Thin,evented web server, and the Rack backend. 
+  $ thin --rackup config.ru start -p 8111   
+
+TODO: redirect the Rack backend log to syslog
