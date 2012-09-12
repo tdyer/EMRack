@@ -64,6 +64,10 @@ use Rack::Session::Dalli, :key => '_os_session', :namespace => '_session_id'
 # pass the environment to the DB connection singleton
 OurStage::Rack::DBConn.environment = environment
 
+map "/dalli_session/" do
+  run OurStage::Rack::DalliSession.new
+end
+
 # Heart Beat Rack endpoint
 # insert into the stats DB, heartbeats table
 map "/tracker/heartbeat/" do
