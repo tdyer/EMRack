@@ -68,7 +68,7 @@ module OurStage
             # visit of the day for a user.
             # today = Time.parse("2012-08-30 12:19:31 EDT" ).utc.to_date
             today = Time.now.utc.to_date
-            if req.session['last_visit'] && req.session['last_visit'].to_date != today
+            if !req.session['last_visit'] || (req.session['last_visit'].to_date != today)
               add_site_visit(user_id, today) if user_id
               req.session['last_visit'] = today
             end
