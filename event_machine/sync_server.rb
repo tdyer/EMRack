@@ -29,10 +29,10 @@ class SimpleSyncHandler < EM::Connection
     response = EM::DelegatedHttpResponse.new(self)
     # sleep(2)
     # Block waiting for each HTTP reply
-    HTTPClient.new().get('http://127.0.0.1:3333/')
+    result = HTTPClient.new().get('http://127.0.0.1:3333/')
     response.status = 200
     response.content_type 'text/html'
-    response.content = 'Hello from EventMachine'
+    response.content = result
     response.send_response
   end
 end

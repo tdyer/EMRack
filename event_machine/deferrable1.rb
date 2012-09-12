@@ -48,8 +48,9 @@ EM.run do
     df.work("chug, chug, chug")
   end
 
-  puts "End of Main Thread!!!"
+  puts "End of Reactor Loop!!!"
 end
+puts "End of Main Thread, See ya"
 
 # NOTE: everything runs on 1 thread!!
 # ruby deferrable1.rb 
