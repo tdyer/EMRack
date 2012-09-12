@@ -12,6 +12,8 @@ gem "rack-async"
 gem 'pg'
 gem "em-postgres"
 gem 'json'
+gem 'dalli'
+gem 'kgio'
 
 group :development, :test do
   gem 'rack-proxy'

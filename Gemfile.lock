@@ -4,10 +4,12 @@ GEM
     archive-tar-minitar (0.5.2)
     columnize (0.3.6)
     daemons (1.1.9)
+    dalli (2.2.1)
     em-postgres (0.0.2)
       eventmachine (>= 0.12.9)
     eventmachine (0.12.10)
     json (1.7.5)
+    kgio (2.7.4)
     linecache19 (0.5.12)
       ruby_core_source (>= 0.1.4)
     pg (0.14.0)
@@ -34,8 +36,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  dalli
   em-postgres
   json
+  kgio
   pg
   rack-async
   rack-proxy
