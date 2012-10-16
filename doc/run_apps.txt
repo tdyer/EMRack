@@ -23,6 +23,8 @@ $ thin --rackup config.ru start -p 8111 -V
 # Requests per second:    3512.10 [#/sec] (mean)
 # 100 requests, 50 connections. 2 requests/connection
 $ ab -n 100 -c 50 http://127.0.0.1:8111/rack
+# Show output
+$ curl http://localhost:8111/rack
 
 # Non-blocking Rack endpoint that returns immediately.
 # It runs a logging statement in a background timer job
@@ -31,12 +33,16 @@ $ ab -n 100 -c 50 http://127.0.0.1:8111/rack
 # 100 requests, 50 connections. 2 requests/connection
 # Requests per second:    5224.39 [#/sec] (mean)
 $ ab -n 100 -c 50 http://127.0.0.1:8111/rack_async
+# Show output
+$ curl http://localhost:8111/rack_async
 
 # Non-blocking Rack endpoint that returns immediately.
 # Runs a SQL query asynchronously.
 # NOTE: this uses the non-blocking, async, postgres gem
 # Requests per second:    4955.40 [#/sec] (mean)
 $ ab -n 100 -c 50 http://127.0.0.1:8111/db_async
+# Show output
+$ curl http://localhost:8111/db_async
 
 # Non-blocking Rack endpoint that returns immediately.
 # Health Check Rack endpoint, doesn't get much simpler that this.
@@ -49,10 +55,21 @@ $ ab -n 100 -c 50  http://127.0.0.1:8111/health_check
 # insert into the stats DB, heartbeats table
 # Non-blocking HTTP request, DB inserts done in background
 # NOTE: 
-# -p test/promo_click_data  (HTTP request/query parameters file)
-# -T 'application/x-www-form-urlencoded' (HTTP POST with form mime-type in the request's Accept header.)
-# Requests per second:    397.84 [#/sec] (mean)
-$ ab -n 100 -c 50 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' http://127.0.0.1:8111/tracker/heartbeat 
+# -p test/tracker_heartbeat_data  (HTTP request/query parameters file)
+# -T 'application/x-www-form-urlencoded' (HTTP POST with form
+# mime-type in the request's Accept header.)
+# -C cookie that has a key for the ourstage main app session. (This
+# should be a current session)
+# ab -n 1 -c 1 -p test/tracker_heartbeat_data -T 'application/x-www-form-urlencoded' -C '_os_session=6c4fa9b0cf0df06219b80229d4a8aac4' http://127.0.0.1:8111/tracker/heartbeat
+
+# This should:
+# 1) create an entry in the main app DB site_visits table if it's the
+# first visit today for a user.
+# SELECT * FROM site_visits ORDER BY created_at DESC LIMIT 3;
+# 2) create an entry in the main app DB onliners table
+# SELECT * FROM onliners;
+# 3)  create a entry in the stats DB hearbeats table
+# SELECT * FROM heartbeats ORDER BY created_at DESC LIMIT 3;
 
 # Non-blocking Rack endpoint that returns immediately.
 # Promo Judge Click Rack endpoint

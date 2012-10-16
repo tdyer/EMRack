@@ -2,7 +2,7 @@ require 'rubygems'
 require 'rack/async'
 require 'rack/session/dalli'
 # require 'ruby-debug'
-%w{ logger em_async_app tracker_heartbeat session_user promo_judge}.each do |filename|
+%w{ logger em_async_app tracker_heartbeat session_user promo_judge dalli_session}.each do |filename|
   require "./#{filename}"
 end
 
@@ -59,7 +59,8 @@ end
 
 # Session storage is backed by Memcache, NOTE: the :key's value MUST
 # match the key in the main app config/initializers/session_store.rb
-use Rack::Session::Dalli, :key => '_os_session', :namespace => '_session_id'
+namespace = (RUBY_VERSION.to_f >= 1.9 ? "#{RUBY_VERSION.to_f}:_session_id" : "_session_id")
+use Rack::Session::Dalli, :key => '_os_session', :namespace => namespace
 
 # pass the environment to the DB connection singleton
 OurStage::Rack::DBConn.environment = environment
